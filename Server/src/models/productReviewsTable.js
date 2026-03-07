@@ -1,13 +1,13 @@
-import database from "../../database/db";
+import database from "../database/db.js";
 
-export async function createProductReviewsTable() {
+export async function createproductReviewsTable() {
     try {
         const query = ` 
         CREATE TABLE IF NOT EXISTS product_reviews (
             id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
             product_id UUID NOT NULL,
             user_id UUID NOT NULL,
-            rating  DECEMAL(3,2) NOT NULL CHECK (rating BETWEEN 0 AND 5),
+            rating DECIMAL(3,2) NOT NULL CHECK (rating BETWEEN 0 AND 5),
             comment TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
@@ -15,7 +15,6 @@ export async function createProductReviewsTable() {
         );
         `;
         await database.query(query);
-        console.log('Product reviews table created successfully');
     } catch (error) {
         console.error('Error creating product reviews table:', error);
         process.exit(1);

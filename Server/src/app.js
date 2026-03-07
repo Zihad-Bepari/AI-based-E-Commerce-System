@@ -3,6 +3,9 @@ import dotenv from "dotenv";
 import cors from "cors";
 import cokkieParser from "cookie-parser";
 import fileUpload from "express-fileupload";
+import { createTables } from "./utils/createTables.js";
+
+
 dotenv.config({path: "./.env"});
 const app = express();
 
@@ -20,6 +23,8 @@ app.use(fileUpload({
   tempFileDir: "./upload",
   useTempFiles: true
 }))
+
+createTables();
 
 app.get("/", (req, res) => {
   res.send("Ai E-Commerce API is running");

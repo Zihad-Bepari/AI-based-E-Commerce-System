@@ -1,6 +1,6 @@
-import database from "../database/db";
+import database from "../database/db.js";
 
-export async function createOrderItemsTable() {
+export async function createorderItemsTable() {
     try {
         const query = ` 
         CREATE TABLE IF NOT EXISTS order_items (
@@ -17,7 +17,6 @@ export async function createOrderItemsTable() {
         );
         `;
         await database.query(query);
-        console.log('Order items table created successfully');
     } catch (error) {
         console.error('Error creating order items table:', error);
         process.exit(1);

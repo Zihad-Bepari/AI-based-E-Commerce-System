@@ -1,6 +1,6 @@
-import database from "../../database/db";
+import database from "../database/db.js";
 
-export async function createUserTable() {
+export async function createuserTable() {
     try {
         const query = ` 
         CREATE TABLE IF NOT EXISTS users (
@@ -16,7 +16,6 @@ export async function createUserTable() {
         );
         `;
         await database.query(query);
-        console.log('User table created successfully');
     } catch (error) {
         console.error('Error creating user table:', error);
         process.exit(1);
