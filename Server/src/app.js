@@ -4,7 +4,8 @@ import cors from "cors";
 import cokkieParser from "cookie-parser";
 import fileUpload from "express-fileupload";
 import { createTables } from "./utils/createTables.js";
-
+import { errorMiddleware } from "./middlewares/errorMiddlleware.js";
+import routes from "./routes/index.js";
 
 dotenv.config({path: "./.env"});
 const app = express();
@@ -24,7 +25,9 @@ app.use(fileUpload({
   useTempFiles: true
 }))
 
+routes(app);
 createTables();
+app.use(errorMiddleware);
 
 app.get("/", (req, res) => {
   res.send("Ai E-Commerce API is running");
