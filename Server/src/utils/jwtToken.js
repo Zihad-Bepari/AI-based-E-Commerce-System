@@ -15,5 +15,4 @@ export const generateToken = (user,statuscode,message,res) => {
         message,
         token,
     })
- 
 }     

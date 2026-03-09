@@ -1,6 +1,10 @@
 import database from "../../database/db.js";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import ErrorHandler from "../../middlewares/errorMiddlleware.js";
+import { generatePasswordResetToken } from "../../utils/generatePasswordToken.js";
+import { sendEmail } from "../../utils/sendEmail.js";
+import { generateEmailTemplate } from "../../utils/generateEmailTemplate.js";
 
 export const registerService = async (data, res, next) => {
     
@@ -43,3 +47,81 @@ export const loginService = async (data, res, next) => {
 
     return user.rows[0];
 }
+
+export const forgotPasswordService = async (email, frontendUrl) => {
+    const userResult = await database.query(
+        "SELECT * FROM users WHERE email = $1",
+        [email]
+    );
+
+    if (userResult.rows.length === 0) {
+        return { success: false, message: "User not found with this email" };
+    }
+
+    const user = userResult.rows[0];
+
+    const { resetToken, hashedToken, expireTime } = generatePasswordResetToken();
+
+    await database.query(
+        "UPDATE users SET reset_password_token = $1, reset_password_expires = to_timestamp($2) WHERE id = $3",
+        [hashedToken, expireTime / 1000, user.id]
+    );
+
+    const resetPasswordUrl = `${frontendUrl}/password/reset/${resetToken}`;
+    const message = generateEmailTemplate(resetPasswordUrl);
+
+    try {
+        await sendEmail({
+            email: user.email,
+            subject: "Password Reset Request",
+            message
+        });
+        return { success: true, message: `Email sent to ${user.email} successfully` };
+    } catch (error) {
+        await database.query(
+            "UPDATE users SET reset_password_token = NULL, reset_password_expires = NULL WHERE id = $1",
+            [user.id]
+        );
+        console.error("Error sending email:", error);
+        return { success: false, message: "Failed to send email. Please try again later." };
+    }
+};
+
+export const resetUserPassword = async (token, newPassword) => {
+  const resetPasswordToken = crypto.createHash("sha256").update(token).digest("hex");
+
+  const userResult = await database.query(
+    "SELECT * FROM users WHERE reset_password_token = $1 AND reset_password_expires > NOW()",
+    [resetPasswordToken]
+  );
+
+  if (userResult.rows.length === 0) {
+    throw new Error("Invalid or expired password reset token");
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+ const updatedUser = await database.query(
+  "UPDATE users SET password = $1, reset_password_token = NULL, reset_password_expires = NULL WHERE id = $2 RETURNING *",
+  [hashedPassword, userResult.rows[0].id]
+);
+
+  return updatedUser.rows[0];
+};
+
+export const updateUserPassword = async (user, currentPassword, newPassword) => {
+  const isMatched = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatched) {
+    throw new ErrorHandler("Current password is incorrect", 400);
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  await database.query(
+    "UPDATE users SET password = $1 WHERE id = $2",
+    [hashedPassword, user.id]
+  );
+
+  return true;
+};
+
