@@ -3,6 +3,7 @@ import { registerService, loginService, forgotPasswordService, resetUserPassword
 import { generateToken } from "../../utils/jwtToken.js";
 import { sendToken } from "../../utils/sendToken.js";
 import { v2 as cloudinary } from "cloudinary";
+import ErrorHandler from "../../middlewares/errorMiddlleware.js";
 
 
 
@@ -78,3 +79,47 @@ export const updatePassword = catchAsyncError(async (req, res, next) => {
   });
 });
 
+export const updateProfile = catchAsyncError(async (req, res, next) => {
+
+    const { error } = updateProfileValidation.validate(req.body);
+
+    if (error) {
+        return next(new ErrorHandler(error.details[0].message, 400));
+    }
+
+    const { name, email } = req.body;
+
+    let imageData = null;
+
+    if (req.file) {
+
+        if (req.user.profile_image_url?.public_id) {
+            await cloudinary.v2.uploader.destroy(req.user.profile_image_url.public_id);
+        }
+
+        const result = await cloudinary.v2.uploader.upload(req.file.path, {
+            folder: "profile_images",
+            width: 150,
+            crop: "scale",
+        });
+
+        imageData = {
+            public_id: result.public_id,
+            url: result.secure_url,
+        };
+    }
+
+    const user = await updateUserProfileService(
+        name,
+        email,
+        imageData,
+        req.user.id
+    );
+
+    res.status(200).json({
+        success: true,
+        message: "Profile updated successfully",
+        user,
+    });
+
+});

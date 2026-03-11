@@ -125,3 +125,21 @@ export const updateUserPassword = async (user, currentPassword, newPassword) => 
   return true;
 };
 
+export const updateUserProfileService = async (name, email, imageData, userId) => {
+
+    let user;
+
+    if (!imageData) {
+        user = await database.query(
+            "UPDATE users SET name=$1, email=$2 WHERE id=$3 RETURNING *",
+            [name, email, userId]
+        );
+    } else {
+        user = await database.query(
+            "UPDATE users SET name=$1, email=$2, profile_image_url=$3 WHERE id=$4 RETURNING *",
+            [name, email, imageData, userId]
+        );
+    }
+
+    return user.rows[0];
+};
